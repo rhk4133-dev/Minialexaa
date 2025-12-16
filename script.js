@@ -1,5 +1,6 @@
 let recognition;
 let listening = false;
+let currentLang = "en-IN";
 
 const talkBtn = document.getElementById("talkBtn");
 const statusEl = document.getElementById("status");
@@ -8,99 +9,95 @@ const botTextEl = document.getElementById("botText");
 
 const synth = window.speechSynthesis;
 
-function speak(text) {
-  synth.cancel();
+function speak(text, lang) {
+  stopListening(); // 🔥 critical
+
   botTextEl.textContent = text;
 
   const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = "kn-IN";
-  utter.rate = 0.95;
+  utter.lang = lang;
+  utter.rate = 1;
+
+  utter.onend = () => {
+    startListening(); // 🔥 resume AFTER speaking
+  };
+
+  synth.cancel();
   synth.speak(utter);
 }
 
-talkBtn.addEventListener("click", () => {
-  if (!listening) startAssistant();
-});
+function startListening() {
+  if (listening) return;
 
-function startAssistant() {
   recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  recognition.lang = "kn-IN";
-  recognition.continuous = true;
+  recognition.lang = currentLang;
+  recognition.continuous = false;
 
   recognition.onstart = () => {
     listening = true;
-    statusEl.textContent = "ಸ್ಥಿತಿ: ಕೇಳುತ್ತಿದೆ...";
+    statusEl.textContent = "Status: Listening...";
   };
 
   recognition.onresult = (event) => {
-    const text =
-      event.results[event.results.length - 1][0].transcript
-        .toLowerCase()
-        .trim();
-
+    const text = event.results[0][0].transcript.toLowerCase().trim();
     userTextEl.textContent = text;
     handleCommand(text);
   };
 
-  recognition.onerror = () => {
-    recognition.start();
-  };
-
   recognition.onend = () => {
-    if (listening) recognition.start();
+    listening = false;
   };
 
   recognition.start();
-
-  // ✅ Speak AFTER mic starts (critical fix)
-  setTimeout(() => {
-    speak("ನಮಸ್ಕಾರ. ಈಗ ನೀವು ಮಾತನಾಡಬಹುದು.");
-  }, 900);
 }
+
+function stopListening() {
+  if (recognition && listening) {
+    recognition.stop();
+    listening = false;
+  }
+}
+
+talkBtn.addEventListener("click", () => {
+  currentLang = "en-IN";
+  speak("Hello. You can speak now.", "en-IN");
+});
 
 function handleCommand(text) {
 
-  if (text.includes("ನಮಸ್ಕಾರ") || text.includes("ಹಲೋ")) {
-    reply([
-      "ನಮಸ್ಕಾರ, ನಾನು ಕೇಳುತ್ತಿದ್ದೇನೆ",
-      "ಹಲೋ, ಹೇಳಿ",
-      "ನಮಸ್ಕಾರ"
-    ]);
+  // English
+  if (text.includes("hello")) {
+    currentLang = "en-IN";
+    speak("Hello, how can I help you?", "en-IN");
     return;
   }
 
-  if (text.includes("ನಿನ್ನ ಹೆಸರು")) {
-    speak("ನನ್ನ ಹೆಸರು ಮಿನಿ ಅಲೆಕ್ಸಾ");
+  // Kannada
+  if (text.includes("ನಮಸ್ಕಾರ")) {
+    currentLang = "kn-IN";
+    speak("ನಮಸ್ಕಾರ, ನಾನು ಕೇಳುತ್ತಿದ್ದೇನೆ", "kn-IN");
     return;
   }
 
-  if (text.includes("ಸಮಯ")) {
-    speak("ಈಗಿನ ಸಮಯ " + new Date().toLocaleTimeString("kn-IN"));
+  // Hindi
+  if (text.includes("नमस्ते")) {
+    currentLang = "hi-IN";
+    speak("नमस्ते, मैं सुन रहा हूँ", "hi-IN");
     return;
   }
 
-  if (text.includes("ದಿನಾಂಕ")) {
-    speak("ಇಂದಿನ ದಿನಾಂಕ " + new Date().toLocaleDateString("kn-IN"));
+  if (text.includes("time") || text.includes("ಸಮಯ") || text.includes("समय")) {
+    const time = new Date().toLocaleTimeString();
+    speak("The time is " + time, currentLang);
     return;
   }
 
-  if (text.includes("ನಿನ್ನನ್ನು ಯಾರು 만든ರು")) {
-    speak("ನನ್ನನ್ನು ರಾಘವ್ ಅವರು ಜಾವಾಸ್ಕ್ರಿಪ್ಟ್ ಬಳಸಿ 만든ರು");
-    return;
-  }
-
-  if (text.includes("ನಿನಗೆ ಕನ್ನಡ ಬರುತ್ತದಾ")) {
-    speak("ಹೌದು, ನನಗೆ ಕನ್ನಡ ಬರುತ್ತದೆ");
-    return;
-  }
-
-  reply([
-    "ನಾನು ಇನ್ನೂ ಕಲಿಯುತ್ತಿದ್ದೇನೆ",
-    "ಈ ಪ್ರಶ್ನೆಗೆ ನಾನು ಸಿದ್ಧವಾಗಿಲ್ಲ",
-    "ದಯವಿಟ್ಟು ಬೇರೆ ಪ್ರಶ್ನೆ ಕೇಳಿ"
-  ]);
-}
-
-function reply(list) {
-  speak(list[Math.floor(Math.random() * list.length)]);
+  speak(
+    currentLang === "kn-IN"
+      ? "ನಾನು ಇನ್ನೂ ಕಲಿಯುತ್ತಿದ್ದೇನೆ"
+      : currentLang === "hi-IN"
+      ? "मैं अभी सीख रहा हूँ"
+      : "I am still learning",
+    currentLang
+  );
 }
