@@ -1,64 +1,55 @@
-let recognition;
-let isListening = false;
+document.addEventListener("DOMContentLoaded", () => {
 
-const responses = [
-  { keys: ["hello", "hi", "hey"], reply: "Hello! I am listening." },
-  { keys: ["your name"], reply: "My name is Mini Alexa." },
-  { keys: ["how are you"], reply: "I am doing great. Thank you for asking." },
-  { keys: ["time"], reply: () => "The time is " + new Date().toLocaleTimeString() },
-  { keys: ["date"], reply: () => "Today is " + new Date().toDateString() },
-  { keys: ["open google"], reply: "Opening Google", action: () => window.open("https://google.com") },
-  { keys: ["open youtube"], reply: "Opening YouTube", action: () => window.open("https://youtube.com") },
-  { keys: ["who made you"], reply: "You created me using JavaScript." },
-  { keys: ["stop"], reply: "Okay, I will stop listening.", stop: true }
-];
+  const talkBtn = document.getElementById("talkBtn");
+  const log = document.getElementById("log");
 
-const fallback = [
-  "I didn’t understand that, but I’m listening.",
-  "Can you say it differently?",
-  "That sounds interesting.",
-  "Try asking me about time or opening websites."
-];
+  let recognition;
+  let listening = false;
 
-function speak(text) {
-  const msg = new SpeechSynthesisUtterance(text);
-  msg.lang = "en-US";
-  speechSynthesis.speak(msg);
-}
-
-document.getElementById("talkBtn").onclick = () => {
-  if (isListening) return;
-
-  recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  recognition.lang = "en-US";
-  recognition.continuous = true;
-  isListening = true;
-
-  recognition.onresult = (event) => {
-    const text = event.results[event.results.length - 1][0].transcript.toLowerCase();
-    document.getElementById("log").innerText = "You said: " + text;
-    handleCommand(text);
-  };
-
-  recognition.start();
-  speak("I am ready. Speak now.");
-};
-
-function handleCommand(text) {
-  for (let item of responses) {
-    for (let key of item.keys) {
-      if (text.includes(key)) {
-        const reply = typeof item.reply === "function" ? item.reply() : item.reply;
-        speak(reply);
-        if (item.action) item.action();
-        if (item.stop) {
-          recognition.stop();
-          isListening = false;
-        }
-        return;
-      }
-    }
+  function speak(text) {
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = "en-US";
+    speechSynthesis.cancel();
+    speechSynthesis.speak(msg);
   }
 
-  speak(fallback[Math.floor(Math.random() * fallback.length)]);
-}
+  talkBtn.addEventListener("click", () => {
+
+    if (!("webkitSpeechRecognition" in window)) {
+      alert("Speech Recognition not supported in this browser");
+      return;
+    }
+
+    if (listening) return;
+
+    recognition = new webkitSpeechRecognition();
+    recognition.continuous = true;
+    recognition.lang = "en-US";
+    listening = true;
+
+    speak("I am ready. Speak now.");
+    log.innerText = "Listening...";
+
+    recognition.onresult = (event) => {
+      const text = event.results[event.results.length - 1][0].transcript.toLowerCase();
+      log.innerText = "You said: " + text;
+
+      if (text.includes("hello")) speak("Hello bro");
+      else if (text.includes("time")) speak(new Date().toLocaleTimeString());
+      else if (text.includes("stop")) {
+        speak("Stopping");
+        recognition.stop();
+        listening = false;
+      }
+      else speak("I heard you");
+    };
+
+    recognition.onerror = (e) => {
+      console.error(e);
+      listening = false;
+    };
+
+    recognition.start();
+  });
+
+});
