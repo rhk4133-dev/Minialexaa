@@ -1,27 +1,26 @@
 body {
   background: #020617;
   color: white;
-  font-family: Arial, sans-serif;
   text-align: center;
-  padding: 40px;
-}
-
-h1 {
-  margin-bottom: 30px;
+  font-family: Arial, sans-serif;
+  padding-top: 50px;
 }
 
 button {
-  padding: 15px 30px;
+  padding: 15px 35px;
   font-size: 18px;
-  border-radius: 8px;
   border: none;
-  cursor: pointer;
+  border-radius: 8px;
   background: #22c55e;
   color: black;
+  cursor: pointer;
+}
+
+button:active {
+  transform: scale(0.95);
 }
 
 #log {
-  margin-top: 25px;
-  font-size: 18px;
+  margin-top: 20px;
   color: #38bdf8;
 }
