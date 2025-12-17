@@ -1,103 +1,64 @@
 let recognition;
-let listening = false;
-let currentLang = "en-IN";
+let isListening = false;
 
-const talkBtn = document.getElementById("talkBtn");
-const statusEl = document.getElementById("status");
-const userTextEl = document.getElementById("userText");
-const botTextEl = document.getElementById("botText");
+const responses = [
+  { keys: ["hello", "hi", "hey"], reply: "Hello! I am listening." },
+  { keys: ["your name"], reply: "My name is Mini Alexa." },
+  { keys: ["how are you"], reply: "I am doing great. Thank you for asking." },
+  { keys: ["time"], reply: () => "The time is " + new Date().toLocaleTimeString() },
+  { keys: ["date"], reply: () => "Today is " + new Date().toDateString() },
+  { keys: ["open google"], reply: "Opening Google", action: () => window.open("https://google.com") },
+  { keys: ["open youtube"], reply: "Opening YouTube", action: () => window.open("https://youtube.com") },
+  { keys: ["who made you"], reply: "You created me using JavaScript." },
+  { keys: ["stop"], reply: "Okay, I will stop listening.", stop: true }
+];
 
-const synth = window.speechSynthesis;
+const fallback = [
+  "I didn’t understand that, but I’m listening.",
+  "Can you say it differently?",
+  "That sounds interesting.",
+  "Try asking me about time or opening websites."
+];
 
-function speak(text, lang) {
-  stopListening(); // 🔥 critical
-
-  botTextEl.textContent = text;
-
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = lang;
-  utter.rate = 1;
-
-  utter.onend = () => {
-    startListening(); // 🔥 resume AFTER speaking
-  };
-
-  synth.cancel();
-  synth.speak(utter);
+function speak(text) {
+  const msg = new SpeechSynthesisUtterance(text);
+  msg.lang = "en-US";
+  speechSynthesis.speak(msg);
 }
 
-function startListening() {
-  if (listening) return;
+document.getElementById("talkBtn").onclick = () => {
+  if (isListening) return;
 
   recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  recognition.lang = currentLang;
-  recognition.continuous = false;
-
-  recognition.onstart = () => {
-    listening = true;
-    statusEl.textContent = "Status: Listening...";
-  };
+  recognition.lang = "en-US";
+  recognition.continuous = true;
+  isListening = true;
 
   recognition.onresult = (event) => {
-    const text = event.results[0][0].transcript.toLowerCase().trim();
-    userTextEl.textContent = text;
+    const text = event.results[event.results.length - 1][0].transcript.toLowerCase();
+    document.getElementById("log").innerText = "You said: " + text;
     handleCommand(text);
   };
 
-  recognition.onend = () => {
-    listening = false;
-  };
-
   recognition.start();
-}
-
-function stopListening() {
-  if (recognition && listening) {
-    recognition.stop();
-    listening = false;
-  }
-}
-
-talkBtn.addEventListener("click", () => {
-  currentLang = "en-IN";
-  speak("Hello. You can speak now.", "en-IN");
-});
+  speak("I am ready. Speak now.");
+};
 
 function handleCommand(text) {
-
-  // English
-  if (text.includes("hello")) {
-    currentLang = "en-IN";
-    speak("Hello, how can I help you?", "en-IN");
-    return;
+  for (let item of responses) {
+    for (let key of item.keys) {
+      if (text.includes(key)) {
+        const reply = typeof item.reply === "function" ? item.reply() : item.reply;
+        speak(reply);
+        if (item.action) item.action();
+        if (item.stop) {
+          recognition.stop();
+          isListening = false;
+        }
+        return;
+      }
+    }
   }
 
-  // Kannada
-  if (text.includes("ನಮಸ್ಕಾರ")) {
-    currentLang = "kn-IN";
-    speak("ನಮಸ್ಕಾರ, ನಾನು ಕೇಳುತ್ತಿದ್ದೇನೆ", "kn-IN");
-    return;
-  }
-
-  // Hindi
-  if (text.includes("नमस्ते")) {
-    currentLang = "hi-IN";
-    speak("नमस्ते, मैं सुन रहा हूँ", "hi-IN");
-    return;
-  }
-
-  if (text.includes("time") || text.includes("ಸಮಯ") || text.includes("समय")) {
-    const time = new Date().toLocaleTimeString();
-    speak("The time is " + time, currentLang);
-    return;
-  }
-
-  speak(
-    currentLang === "kn-IN"
-      ? "ನಾನು ಇನ್ನೂ ಕಲಿಯುತ್ತಿದ್ದೇನೆ"
-      : currentLang === "hi-IN"
-      ? "मैं अभी सीख रहा हूँ"
-      : "I am still learning",
-    currentLang
-  );
+  speak(fallback[Math.floor(Math.random() * fallback.length)]);
 }
