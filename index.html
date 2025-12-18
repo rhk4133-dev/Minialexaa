@@ -2,17 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Mini Alexa</title>
+  <title>Advanced Voice Assistant</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <h1>🎙️ Mini Alexa</h1>
-  <button id="talkBtn">TALK</button>
-  <p id="log">Press TALK and speak</p>
+  <div class="container">
+    <h1>Voice Assistant</h1>
+    <p id="status">Idle</p>
 
-  <!-- IMPORTANT: script at END -->
+    <button id="startBtn">Start Assistant</button>
+
+    <div class="log" id="log"></div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
