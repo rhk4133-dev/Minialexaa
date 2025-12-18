@@ -1,55 +1,59 @@
-document.addEventListener("DOMContentLoaded", () => {
+const startBtn = document.getElementById("startBtn");
+const statusText = document.getElementById("status");
+const logBox = document.getElementById("log");
 
-  const talkBtn = document.getElementById("talkBtn");
-  const log = document.getElementById("log");
+let recognition;
+let stage = 0; // 0 = waiting anything, 1 = waiting name
 
-  let recognition;
-  let listening = false;
+function log(text) {
+  logBox.innerHTML += text + "<br>";
+  logBox.scrollTop = logBox.scrollHeight;
+}
 
-  function speak(text) {
-    const msg = new SpeechSynthesisUtterance(text);
-    msg.lang = "en-US";
-    speechSynthesis.cancel();
-    speechSynthesis.speak(msg);
-  }
+function speak(text) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 1;
+  utterance.pitch = 1;
+  speechSynthesis.speak(utterance);
+}
 
-  talkBtn.addEventListener("click", () => {
+function initRecognition() {
+  recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang = "en-US";
+  recognition.continuous = false;
+  recognition.interimResults = false;
 
-    if (!("webkitSpeechRecognition" in window)) {
-      alert("Speech Recognition not supported in this browser");
-      return;
+  recognition.onstart = () => {
+    statusText.textContent = "Listening...";
+  };
+
+  recognition.onresult = (event) => {
+    const speech = event.results[0][0].transcript.trim();
+    log("User: " + speech);
+
+    if (stage === 0) {
+      stage = 1;
+      speak("What is your name?");
+      setTimeout(() => recognition.start(), 1200);
+    } else if (stage === 1) {
+      const name = speech.split(" ")[0];
+      speak(`Fuck you ${name}`);
+      log("Assistant: Fuck you " + name);
+      stage = 0;
     }
+  };
 
-    if (listening) return;
+  recognition.onerror = (e) => {
+    statusText.textContent = "Error";
+    console.error(e);
+  };
 
-    recognition = new webkitSpeechRecognition();
-    recognition.continuous = true;
-    recognition.lang = "en-US";
-    listening = true;
+  recognition.onend = () => {
+    statusText.textContent = "Idle";
+  };
+}
 
-    speak("I am ready. Speak now.");
-    log.innerText = "Listening...";
-
-    recognition.onresult = (event) => {
-      const text = event.results[event.results.length - 1][0].transcript.toLowerCase();
-      log.innerText = "You said: " + text;
-
-      if (text.includes("hello")) speak("Hello bro");
-      else if (text.includes("time")) speak(new Date().toLocaleTimeString());
-      else if (text.includes("stop")) {
-        speak("Stopping");
-        recognition.stop();
-        listening = false;
-      }
-      else speak("I heard you");
-    };
-
-    recognition.onerror = (e) => {
-      console.error(e);
-      listening = false;
-    };
-
-    recognition.start();
-  });
-
+startBtn.addEventListener("click", () => {
+  if (!recognition) initRecognition();
+  recognition.start();
 });
